@@ -115,7 +115,7 @@ func main() {
 	if e := discord.UpdateStatusComplex(discordgo.UpdateStatusData{
 		Activities: []*discordgo.Activity{
 			{
-				Name: "출퇴근 기록",
+				Name: "명령: 1=입실, 0=퇴실",
 				Type: discordgo.ActivityTypeGame,
 			},
 		},
