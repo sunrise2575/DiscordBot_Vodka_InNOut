@@ -30,15 +30,23 @@ func readFile(path string) string {
 }
 
 func recordInNOut(sess *discordgo.Session, msg *discordgo.MessageCreate, suffix string) {
-	member, e := sess.GuildMember(msg.GuildID, msg.Author.ID)
+	guildID, channelID, authorID, timestamp := msg.GuildID, msg.ChannelID, msg.Author.ID, msg.Timestamp
+
+	e := sess.ChannelMessageDelete(channelID, msg.ID)
 	if e != nil {
 		log.Println(e)
 		return
 	}
 
-	content := "`" + getTime(msg.Timestamp) + "` <@!" + member.User.ID + "> `" + suffix + "`"
+	member, e := sess.GuildMember(guildID, authorID)
+	if e != nil {
+		log.Println(e)
+		return
+	}
 
-	_, e = sess.ChannelMessageSend(msg.ChannelID, content)
+	content := "`" + getTime(timestamp) + "` <@!" + member.User.ID + "> `" + suffix + "`"
+
+	_, e = sess.ChannelMessageSend(channelID, content)
 	if e != nil {
 		log.Println(e)
 		return
@@ -60,6 +68,28 @@ func main() {
 		log.Fatalln("error opening connection,", e)
 		return
 	}
+
+	// Guild에 초대 / 접속했을 때 실행하는 부분
+	discord.AddHandler(func(session *discordgo.Session, event *discordgo.GuildCreate) {
+		// Guild에 허용된 채널 읽기
+		for _, channel := range event.Guild.Channels {
+			if channel.Type == discordgo.ChannelTypeGuildText {
+				permission, e := session.UserChannelPermissions(discord.State.User.ID, channel.ID)
+				if e != nil {
+					log.Println(e)
+				}
+
+				mustRequired := discordgo.PermissionViewChannel |
+					discordgo.PermissionSendMessages |
+					discordgo.PermissionManageMessages |
+					discordgo.PermissionReadMessageHistory
+
+				if permission&int64(mustRequired) == int64(mustRequired) {
+					log.Printf("found channel: [%v] in [%v]\n", channel.Name, event.Guild.Name)
+				}
+			}
+		}
+	})
 
 	if e := discord.UpdateStatusComplex(discordgo.UpdateStatusData{
 		Activities: []*discordgo.Activity{
