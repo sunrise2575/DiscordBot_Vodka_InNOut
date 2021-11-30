@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -18,7 +19,27 @@ func getTime(discordtime discordgo.Timestamp) string {
 	temp, _ := discordtime.Parse()
 	nowZoneName, nowZoneOff := time.Now().Zone()
 	temp = temp.In(time.FixedZone(nowZoneName, nowZoneOff))
-	return temp.Format("2006-01-02 15:04:05")
+	weekday := temp.Weekday()
+	weekdayName := ""
+	switch weekday {
+	case 0:
+		weekdayName = "일"
+	case 1:
+		weekdayName = "월"
+	case 2:
+		weekdayName = "화"
+	case 3:
+		weekdayName = "수"
+	case 4:
+		weekdayName = "목"
+	case 5:
+		weekdayName = "금"
+	case 6:
+		weekdayName = "토"
+	}
+
+	field := strings.Fields(temp.Format("2006-01-02 15:04:05"))
+	return field[0] + " (" + weekdayName + ") " + field[1]
 }
 
 func readFile(path string) string {
